@@ -44,6 +44,9 @@ let tablebaseReady = Boolean(window.MAKE_SHIFT_TABLEBASE);
 let statusMessage = "";
 let gameToken = 0;
 let aiThinking = false;
+let movementAnimations = [];
+let placementAnimations = [];
+let activeAnimations = 0;
 
 function freshUiState(turn) {
   return {
@@ -120,7 +123,7 @@ function isHumanTurn() {
 }
 
 function isBusy() {
-  return aiThinking || !isHumanTurn();
+  return aiThinking || activeAnimations > 0 || !isHumanTurn();
 }
 
 function startNewGame(nextHumanPlayer) {
@@ -153,7 +156,37 @@ function finishAction(action) {
 }
 
 function applyAction(action) {
+  queueActionAnimation(action);
   finishAction(action);
+}
+
+function queueActionAnimation(action) {
+  const detail = action.detail;
+  movementAnimations = [];
+  placementAnimations = [];
+  if (detail.kind === "move") {
+    queueMovementGhost(detail.from, detail.to, ".stone", 180);
+  } else if (detail.kind === "push") {
+    queueMovementGhost(detail.from, detail.hole, ".push-stone", 180);
+    if (detail.length === 2) {
+      queueMovementGhost(detail.second, detail.from, ".push-stone", 180);
+    }
+  } else if (detail.kind === "place") {
+    placementAnimations.push({ to: detail.to, selector: ".stone" });
+  }
+}
+
+function queueMovementGhost(from, to, selector, duration) {
+  const fromCell = cellLayerEl.querySelector(`.cell[data-index="${from}"]`);
+  const source = fromCell?.querySelector(selector);
+  if (!source) return;
+  movementAnimations.push({
+    to,
+    selector,
+    duration,
+    ghost: source.cloneNode(true),
+    fromRect: source.getBoundingClientRect()
+  });
 }
 
 function setMode(nextMode) {
@@ -221,6 +254,10 @@ function chooseAiAction() {
 }
 
 function maybeRunAi() {
+  if (activeAnimations > 0) {
+    window.setTimeout(maybeRunAi, 40);
+    return;
+  }
   if (winner || state.game.turn !== aiPlayer || aiThinking) return;
   const token = gameToken;
   aiThinking = true;
@@ -268,17 +305,16 @@ function renderRuleBoard(name, setup) {
 
 function renderRuleBoards() {
   renderRuleBoard("setup", {
-    cells: [EMPTY, EMPTY, EMPTY, EMPTY, HOLE, EMPTY, EMPTY, EMPTY, EMPTY],
-    highlight: [4]
+    cells: [EMPTY, EMPTY, EMPTY, EMPTY, HOLE, EMPTY, EMPTY, EMPTY, EMPTY]
   });
   renderRuleBoard("single-push", {
     cells: [EMPTY, EMPTY, EMPTY, EMPTY, HOLE, BLUE, EMPTY, EMPTY, EMPTY],
-    highlight: [4, 5],
+    highlight: [5],
     arrows: ["from-right"]
   });
   renderRuleBoard("double-push", {
-    cells: [HOLE, EMPTY, RED, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
-    highlight: [0, 1, 2],
+    cells: [EMPTY, RED, HOLE, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
+    highlight: [0],
     arrows: ["double-left"]
   });
   renderRuleBoard("no-reverse", {
@@ -300,6 +336,7 @@ function renderBoard() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "cell";
+    button.dataset.index = String(index);
     button.setAttribute("aria-label", CELL_COORDS[index]);
     if (index === hole) button.classList.add("hole");
     if (legal.includes(index)) button.classList.add("legal");
@@ -321,6 +358,61 @@ function renderBoard() {
       button.append(push);
     }
     cellLayerEl.append(button);
+  }
+  applyMovementAnimations();
+  applyPlacementAnimations();
+  movementAnimations = [];
+  placementAnimations = [];
+}
+
+function finishAnimatedElement(element) {
+  activeAnimations += 1;
+  element.addEventListener("animationend", () => {
+    activeAnimations = Math.max(0, activeAnimations - 1);
+    renderStatus();
+  }, { once: true });
+}
+
+function applyPlacementAnimations() {
+  for (const { to, selector } of placementAnimations) {
+    const toCell = cellLayerEl.querySelector(`.cell[data-index="${to}"]`);
+    const target = toCell?.querySelector(selector);
+    if (!target) continue;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) continue;
+    finishAnimatedElement(target);
+    target.classList.add("place-in");
+  }
+}
+
+function applyMovementAnimations() {
+  for (const { to, selector, duration, ghost, fromRect } of movementAnimations) {
+    const toCell = cellLayerEl.querySelector(`.cell[data-index="${to}"]`);
+    const target = toCell?.querySelector(selector);
+    if (!target || !ghost) continue;
+    const toRect = target.getBoundingClientRect();
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) continue;
+    target.classList.add("movement-target-hidden");
+    ghost.classList.add("movement-ghost");
+    ghost.style.left = `${fromRect.left}px`;
+    ghost.style.top = `${fromRect.top}px`;
+    ghost.style.width = `${fromRect.width}px`;
+    ghost.style.height = `${fromRect.height}px`;
+    document.body.append(ghost);
+    activeAnimations += 1;
+    ghost.animate([
+      { transform: "translate(0, 0)" },
+      { transform: `translate(${toRect.left - fromRect.left}px, ${toRect.top - fromRect.top}px)` }
+    ], {
+      duration,
+      easing: "ease-out",
+      fill: "forwards"
+    }).finished.finally(() => {
+      ghost.remove();
+      target.classList.remove("movement-target-hidden");
+      activeAnimations = Math.max(0, activeAnimations - 1);
+      renderStatus();
+    });
   }
 }
 
@@ -397,12 +489,13 @@ function renderSolution() {
   const player = playerName(game.turn);
   const best = actions.find(item => item.order === evaluation.policy) || actions[0];
   const opponent = playerName(1 - game.turn);
+  const isInitial = keyOfGame(game) === keyOfGame(freshGame(0));
   if (evaluation.value === 1) {
-    solutionHeadlineEl.textContent = `${player} is winning`;
+    solutionHeadlineEl.textContent = isInitial ? `${player} wins with perfect play` : `${player} is winning`;
     solutionBestEl.textContent = best ? `Best move: ${best.action.desc}` : "Best move: --";
     solutionDetailEl.textContent = best ? `Wins in ${best.dtm}.` : "Forced win.";
   } else if (evaluation.value === -1) {
-    solutionHeadlineEl.textContent = `${opponent} is winning`;
+    solutionHeadlineEl.textContent = isInitial ? `${opponent} wins with perfect play` : `${opponent} is winning`;
     solutionBestEl.textContent = best ? `Best defense: ${best.action.desc}` : "Best defense: --";
     solutionDetailEl.textContent = best ? `Best defense loses in ${best.dtm}.` : "Forced loss.";
   } else {

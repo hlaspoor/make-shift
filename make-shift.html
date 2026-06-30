@@ -35,20 +35,20 @@
   --ink: #e1d5c3;
   --muted: #a99a89;
   --board: #33241d;
-  --board-line: #b08b5f;
+  --board-line: #8f704d;
   --cell: #3b2a22;
   --cell-hover: #47352b;
   --cell-selected: #4b372f;
-  --cell-winning: #5a3d2d;
+  --cell-winning: #725033;
   --panel: #241916;
   --panel-line: rgba(222, 188, 142, .24);
   --button: #2e211e;
   --button-active: #44312b;
   --ivory-piece: #eadfc9;
   --ivory-crescent: #c8b998;
-  --sage-piece: #7fa36d;
-  --sage-crescent: #587747;
-  --push-fill: #674735;
+  --madder-piece: #c84c48;
+  --madder-crescent: #963331;
+  --push-fill: #6b4937;
   --push-line: #8a6047;
   --focus: #d9b47b;
   --focus-ink: #1a100c;
@@ -276,10 +276,42 @@ body {
   background: var(--stone-fill);
 }
 
-.stone.sage {
-  --stone-fill: var(--sage-piece);
-  --stone-crescent: var(--sage-crescent);
+.stone.madder {
+  --stone-fill: var(--madder-piece);
+  --stone-crescent: var(--madder-crescent);
   background: var(--stone-fill);
+}
+
+.stone.place-in {
+  animation: stone-place-in 120ms ease-out both;
+}
+
+@keyframes stone-place-in {
+  from {
+    opacity: .72;
+    transform: scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.movement-ghost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1000;
+  margin: 0;
+}
+
+.movement-target-hidden {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stone.place-in {
+    animation: none;
+  }
 }
 
 .new-game-actions {
@@ -491,11 +523,14 @@ body {
 
 .rules {
   margin-top: 10px;
+  padding: 4px 16px 16px;
+  width: min(100%, 520px);
+  justify-self: center;
 }
 
 .rules-content {
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
 .rules-copy {
@@ -511,12 +546,12 @@ body {
 .rules-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 22px 20px;
 }
 
 .rule-card {
   display: grid;
-  gap: 8px;
+  gap: 14px;
   align-content: start;
 }
 
@@ -528,13 +563,14 @@ body {
 }
 
 .rule-board {
-  width: 100%;
+  width: min(100%, 150px);
   aspect-ratio: 1;
   border: 2px solid rgba(138, 146, 135, .5);
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
   position: relative;
+  justify-self: center;
   opacity: .62;
 }
 
@@ -555,7 +591,7 @@ body {
 }
 
 .rule-board .push-stone {
-  width: 70%;
+  width: 88%;
 }
 
 .rule-board .hole {
@@ -591,34 +627,42 @@ body {
 }
 
 .rule-arrow.from-right {
-  right: 30%;
-  top: 48%;
-  transform: rotate(180deg);
+  left: 50%;
+  top: 50%;
+  width: 33.333%;
+}
+
+.rule-arrow.from-right::before {
+  width: 100%;
+}
+
+.rule-arrow.from-right::after {
+  left: -2px;
+  right: auto;
+  border-left: 0;
+  border-right: 8px solid rgba(215, 205, 188, .75);
 }
 
 .rule-arrow.double-left {
-  left: 16%;
-  top: 15%;
+  left: 16.666%;
+  top: 16.666%;
+  width: 33.333%;
   transform: rotate(0deg);
 }
 
 .rule-arrow.double-left::before {
-  width: 74px;
+  width: 100%;
 }
 
 .rule-arrow.blocked-back {
-  right: 29%;
-  top: 48%;
+  left: 50%;
+  top: 50%;
+  width: 33.333%;
   transform: rotate(0deg);
-  opacity: .5;
 }
 
 .rule-arrow.blocked-back::before {
-  background: #c47a66;
-}
-
-.rule-arrow.blocked-back::after {
-  border-left-color: #c47a66;
+  width: 100%;
 }
 
 .site-footer {
@@ -663,6 +707,24 @@ body {
 
   .rules-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 430px) {
+  .app {
+    gap: 14px;
+  }
+
+  .rules-grid {
+    gap: 18px 14px;
+  }
+
+  .rule-card {
+    gap: 12px;
+  }
+
+  .rule-board {
+    width: min(100%, 118px);
   }
 }
 
@@ -724,8 +786,13 @@ body {
     <section class="rules" aria-label="How to play">
       <div class="rules-content">
         <div class="rules-copy">
-          <p><strong>Object of Make-Shift</strong> - Get your three colored stones in one vertical, horizontal, or diagonal row.</p>
-          <p><strong>Playing Make-Shift</strong> - On each turn, place an unplayed stone, move one of your stones to an empty push-stone, or push a black push-stone into the empty space. A pushed colored stone rides along with its black push-stone.</p>
+          <p><strong>Object of the Game</strong><br>Complete a row of three of your pieces horizontally, vertically, or diagonally.</p>
+          <p><strong>Setting Up the Game</strong><br>Place the eight black push-stones in the playing area, leaving the central position empty as shown. Each player takes three playing pieces: Ivory or Madder.</p>
+          <p><strong>Playing the Game</strong><br>Choose the player to start. Each player makes only one of the following moves on a turn:<br>
+          - Place one of your pieces on a vacant tile.<br>
+          - Move one of your pieces to another vacant tile.<br>
+          - Slide a tile into the adjoining empty space, whether or not it carries a playing piece.</p>
+          <p>If a single tile is moved, the opponent may not return it to its former position on the next move. If the empty space is at the perimeter of the board, a player may slide both tiles in the same row together as one, leaving the empty space at the other end of the row. The opponent may then slide back the single tile of the pair into the adjoining empty space.</p>
         </div>
 
         <div class="rules-grid">
@@ -770,7 +837,7 @@ self.MAKE_SHIFT_TABLEBASE={"version":1,"evaluationPacked":"qyvHAgPIBQzGArEBgwkDg
   const HOLE = 3;
   const PLAYERS = [
     { id: 0, name: "Ivory", className: "ivory", stone: BLUE },
-    { id: 1, name: "Sage", className: "sage", stone: RED }
+    { id: 1, name: "Madder", className: "madder", stone: RED }
   ];
   const WIN_LINES = [
     [0, 1, 2], [3, 4, 5], [6, 7, 8],
@@ -1036,6 +1103,9 @@ let tablebaseReady = Boolean(window.MAKE_SHIFT_TABLEBASE);
 let statusMessage = "";
 let gameToken = 0;
 let aiThinking = false;
+let movementAnimations = [];
+let placementAnimations = [];
+let activeAnimations = 0;
 
 function freshUiState(turn) {
   return {
@@ -1112,7 +1182,7 @@ function isHumanTurn() {
 }
 
 function isBusy() {
-  return aiThinking || !isHumanTurn();
+  return aiThinking || activeAnimations > 0 || !isHumanTurn();
 }
 
 function startNewGame(nextHumanPlayer) {
@@ -1145,7 +1215,37 @@ function finishAction(action) {
 }
 
 function applyAction(action) {
+  queueActionAnimation(action);
   finishAction(action);
+}
+
+function queueActionAnimation(action) {
+  const detail = action.detail;
+  movementAnimations = [];
+  placementAnimations = [];
+  if (detail.kind === "move") {
+    queueMovementGhost(detail.from, detail.to, ".stone", 180);
+  } else if (detail.kind === "push") {
+    queueMovementGhost(detail.from, detail.hole, ".push-stone", 180);
+    if (detail.length === 2) {
+      queueMovementGhost(detail.second, detail.from, ".push-stone", 180);
+    }
+  } else if (detail.kind === "place") {
+    placementAnimations.push({ to: detail.to, selector: ".stone" });
+  }
+}
+
+function queueMovementGhost(from, to, selector, duration) {
+  const fromCell = cellLayerEl.querySelector(`.cell[data-index="${from}"]`);
+  const source = fromCell?.querySelector(selector);
+  if (!source) return;
+  movementAnimations.push({
+    to,
+    selector,
+    duration,
+    ghost: source.cloneNode(true),
+    fromRect: source.getBoundingClientRect()
+  });
 }
 
 function setMode(nextMode) {
@@ -1213,6 +1313,10 @@ function chooseAiAction() {
 }
 
 function maybeRunAi() {
+  if (activeAnimations > 0) {
+    window.setTimeout(maybeRunAi, 40);
+    return;
+  }
   if (winner || state.game.turn !== aiPlayer || aiThinking) return;
   const token = gameToken;
   aiThinking = true;
@@ -1260,17 +1364,16 @@ function renderRuleBoard(name, setup) {
 
 function renderRuleBoards() {
   renderRuleBoard("setup", {
-    cells: [EMPTY, EMPTY, EMPTY, EMPTY, HOLE, EMPTY, EMPTY, EMPTY, EMPTY],
-    highlight: [4]
+    cells: [EMPTY, EMPTY, EMPTY, EMPTY, HOLE, EMPTY, EMPTY, EMPTY, EMPTY]
   });
   renderRuleBoard("single-push", {
     cells: [EMPTY, EMPTY, EMPTY, EMPTY, HOLE, BLUE, EMPTY, EMPTY, EMPTY],
-    highlight: [4, 5],
+    highlight: [5],
     arrows: ["from-right"]
   });
   renderRuleBoard("double-push", {
-    cells: [HOLE, EMPTY, RED, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
-    highlight: [0, 1, 2],
+    cells: [EMPTY, RED, HOLE, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
+    highlight: [0],
     arrows: ["double-left"]
   });
   renderRuleBoard("no-reverse", {
@@ -1292,6 +1395,7 @@ function renderBoard() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "cell";
+    button.dataset.index = String(index);
     button.setAttribute("aria-label", CELL_COORDS[index]);
     if (index === hole) button.classList.add("hole");
     if (legal.includes(index)) button.classList.add("legal");
@@ -1313,6 +1417,61 @@ function renderBoard() {
       button.append(push);
     }
     cellLayerEl.append(button);
+  }
+  applyMovementAnimations();
+  applyPlacementAnimations();
+  movementAnimations = [];
+  placementAnimations = [];
+}
+
+function finishAnimatedElement(element) {
+  activeAnimations += 1;
+  element.addEventListener("animationend", () => {
+    activeAnimations = Math.max(0, activeAnimations - 1);
+    renderStatus();
+  }, { once: true });
+}
+
+function applyPlacementAnimations() {
+  for (const { to, selector } of placementAnimations) {
+    const toCell = cellLayerEl.querySelector(`.cell[data-index="${to}"]`);
+    const target = toCell?.querySelector(selector);
+    if (!target) continue;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) continue;
+    finishAnimatedElement(target);
+    target.classList.add("place-in");
+  }
+}
+
+function applyMovementAnimations() {
+  for (const { to, selector, duration, ghost, fromRect } of movementAnimations) {
+    const toCell = cellLayerEl.querySelector(`.cell[data-index="${to}"]`);
+    const target = toCell?.querySelector(selector);
+    if (!target || !ghost) continue;
+    const toRect = target.getBoundingClientRect();
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) continue;
+    target.classList.add("movement-target-hidden");
+    ghost.classList.add("movement-ghost");
+    ghost.style.left = `${fromRect.left}px`;
+    ghost.style.top = `${fromRect.top}px`;
+    ghost.style.width = `${fromRect.width}px`;
+    ghost.style.height = `${fromRect.height}px`;
+    document.body.append(ghost);
+    activeAnimations += 1;
+    ghost.animate([
+      { transform: "translate(0, 0)" },
+      { transform: `translate(${toRect.left - fromRect.left}px, ${toRect.top - fromRect.top}px)` }
+    ], {
+      duration,
+      easing: "ease-out",
+      fill: "forwards"
+    }).finished.finally(() => {
+      ghost.remove();
+      target.classList.remove("movement-target-hidden");
+      activeAnimations = Math.max(0, activeAnimations - 1);
+      renderStatus();
+    });
   }
 }
 
@@ -1389,12 +1548,13 @@ function renderSolution() {
   const player = playerName(game.turn);
   const best = actions.find(item => item.order === evaluation.policy) || actions[0];
   const opponent = playerName(1 - game.turn);
+  const isInitial = keyOfGame(game) === keyOfGame(freshGame(0));
   if (evaluation.value === 1) {
-    solutionHeadlineEl.textContent = `${player} is winning`;
+    solutionHeadlineEl.textContent = isInitial ? `${player} wins with perfect play` : `${player} is winning`;
     solutionBestEl.textContent = best ? `Best move: ${best.action.desc}` : "Best move: --";
     solutionDetailEl.textContent = best ? `Wins in ${best.dtm}.` : "Forced win.";
   } else if (evaluation.value === -1) {
-    solutionHeadlineEl.textContent = `${opponent} is winning`;
+    solutionHeadlineEl.textContent = isInitial ? `${opponent} wins with perfect play` : `${opponent} is winning`;
     solutionBestEl.textContent = best ? `Best defense: ${best.action.desc}` : "Best defense: --";
     solutionDetailEl.textContent = best ? `Best defense loses in ${best.dtm}.` : "Forced loss.";
   } else {
