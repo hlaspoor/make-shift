@@ -24,6 +24,12 @@
     { dr: 0, dc: -1, label: "left" },
     { dr: 0, dc: 1, label: "right" }
   ];
+  const OPPOSITE_LABELS = {
+    up: "down",
+    down: "up",
+    left: "right",
+    right: "left"
+  };
 
   function freshGame(turn = 0) {
     return {
@@ -151,6 +157,7 @@
 
     const hole = findHole(game.cells);
     for (const dir of DIRS) {
+      const slideLabel = OPPOSITE_LABELS[dir.label];
       const first = neighbor(hole, dir);
       if (first < 0 || game.cells[first] === HOLE) continue;
       const singleBan = encodePushBan(hole, first, 1);
@@ -158,7 +165,7 @@
         const after = cloneGame(game);
         after.cells[hole] = after.cells[first];
         after.cells[first] = HOLE;
-      actions.push(actionResult(game, after, `push ${CELL_COORDS[first]} ${dir.label}`, {
+      actions.push(actionResult(game, after, `push ${CELL_COORDS[first]} ${slideLabel}`, {
         kind: "push",
         from: first,
         target: first,
@@ -180,7 +187,7 @@
       after.cells[hole] = after.cells[first];
       after.cells[first] = after.cells[second];
       after.cells[second] = HOLE;
-      actions.push(actionResult(game, after, `push ${CELL_COORDS[second]}+${CELL_COORDS[first]} ${dir.label}`, {
+      actions.push(actionResult(game, after, `push ${CELL_COORDS[second]}+${CELL_COORDS[first]} ${slideLabel}`, {
         kind: "push",
         from: first,
         second,
