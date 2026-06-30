@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && node build-standalone.js",
+    "preview": "vite preview",
+    "generate-tablebase": "node generate-tablebase.js",
+    "build-standalone": "node build-standalone.js"
+  },
+  "dependencies": {
+    "vite": "latest"
+  }
+}

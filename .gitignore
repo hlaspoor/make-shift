@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.DS_Store
+make-shift-screenshot.png
+make-shift-two-stones.png
