@@ -44,6 +44,8 @@ let tablebaseReady = Boolean(window.MAKE_SHIFT_TABLEBASE);
 let statusMessage = "";
 let gameToken = 0;
 let aiThinking = false;
+let aiTimer = null;
+let aiRetryTimer = null;
 let movementAnimations = [];
 let placementAnimations = [];
 let activeAnimations = 0;
@@ -127,6 +129,7 @@ function isBusy() {
 }
 
 function startNewGame(nextHumanPlayer) {
+  resetPendingWork();
   humanPlayer = nextHumanPlayer;
   aiPlayer = 1 - humanPlayer;
   state = freshUiState(0);
@@ -139,6 +142,19 @@ function startNewGame(nextHumanPlayer) {
   gameToken += 1;
   render();
   maybeRunAi();
+}
+
+function resetPendingWork() {
+  if (aiTimer !== null) window.clearTimeout(aiTimer);
+  if (aiRetryTimer !== null) window.clearTimeout(aiRetryTimer);
+  aiTimer = null;
+  aiRetryTimer = null;
+  aiThinking = false;
+  activeAnimations = 0;
+  movementAnimations = [];
+  placementAnimations = [];
+  document.querySelectorAll(".movement-ghost").forEach(ghost => ghost.remove());
+  document.querySelectorAll(".movement-target-hidden").forEach(target => target.classList.remove("movement-target-hidden"));
 }
 
 function finishAction(action) {
@@ -253,17 +269,29 @@ function chooseAiAction() {
   return ranked[0]?.action || actions[0];
 }
 
-function maybeRunAi() {
+function maybeRunAi(token = gameToken) {
+  if (token !== gameToken) return;
   if (activeAnimations > 0) {
-    window.setTimeout(maybeRunAi, 40);
+    if (aiRetryTimer !== null) window.clearTimeout(aiRetryTimer);
+    aiRetryTimer = window.setTimeout(() => {
+      aiRetryTimer = null;
+      maybeRunAi(token);
+    }, 40);
     return;
   }
   if (winner || state.game.turn !== aiPlayer || aiThinking) return;
-  const token = gameToken;
   aiThinking = true;
   render();
-  window.setTimeout(() => {
-    if (token !== gameToken || winner || state.game.turn !== aiPlayer) return;
+  if (aiTimer !== null) window.clearTimeout(aiTimer);
+  aiTimer = window.setTimeout(() => {
+    aiTimer = null;
+    if (token !== gameToken || winner || state.game.turn !== aiPlayer) {
+      if (token === gameToken) {
+        aiThinking = false;
+        render();
+      }
+      return;
+    }
     aiThinking = false;
     const action = chooseAiAction();
     if (!action) {
