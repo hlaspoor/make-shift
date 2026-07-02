@@ -188,6 +188,7 @@ body {
 }
 
 .cell-coord {
+  display: none;
   position: absolute;
   right: 5px;
   bottom: 4px;
@@ -674,9 +675,8 @@ body {
     width: 250px;
     max-height: none;
     overflow: visible;
-    display: block;
+    display: none;
     padding: 0 0 18px 20px;
-    display: grid;
     align-content: start;
     gap: 18px;
   }
